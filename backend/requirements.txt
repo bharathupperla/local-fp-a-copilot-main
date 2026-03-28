@@ -1,0 +1,179 @@
+fastapi
+uvicorn
+pandas
+numpy
+httpx
+pyarrow
+
+
+
+import json
+import re
+from typing import Dict, Any
+from engine.canonical_resolver import resolve_to_canonical
+
+
+DEFAULT_INTENT = {
+    "measures": [],
+    "filters": {},
+    "aggregation": "sum",
+    "derived_logic": None,
+    "dimensions": []
+}
+
+
+# ---------------------------------------------------------
+# JSON EXTRACTION (LLM SAFETY)
+# ---------------------------------------------------------
+def _extract_json(text: str) -> Dict[str, Any]:
+    if not isinstance(text, str) or not text.strip():
+        return {}
+
+    text = text.strip()
+    text = re.sub(r"^```json|^```|```$", "", text, flags=re.IGNORECASE).strip()
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            parsed = json.loads(match.group())
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+
+    return {}
+
+
+# ---------------------------------------------------------
+# MEASURE INFERENCE (EXTENDED)
+# ---------------------------------------------------------
+def _infer_measure_from_question(question: str) -> str | None:
+    q = question.lower()
+
+    if "gm%" in q or "gross margin %" in q:
+        return "gm_pct"
+    if "gross margin" in q or "profit" in q:
+        return "gm_dollars"
+    if "revenue" in q or "rev" in q:
+        return "revenue"
+    if "spread" in q:
+        return "gm_per_hour"
+    if "br/hr" in q or "bill rate" in q:
+        return "bill_rate_reg"
+    if "hours" in q:
+        return "total_hours"
+    if "how many" in q or "count" in q or "associates" in q:
+        return "quantity"
+
+    return None
+
+
+# ---------------------------------------------------------
+# FILTER EXTRACTION (SAFE & DETERMINISTIC)
+# ---------------------------------------------------------
+def _extract_filters_from_question(question: str) -> Dict[str, Any]:
+    filters: Dict[str, Any] = {}
+    q = question.lower()
+
+    # ---------------------------
+    # Customer
+    # ---------------------------
+    cust_match = re.search(
+        r"(?:of|for)\s+([a-z0-9 &]+?)(?:\s+in|\s+for|\s+during|\?|$)",
+        q
+    )
+    if cust_match:
+        filters["customer_name"] = cust_match.group(1).strip().title()
+
+    # ---------------------------
+    # Cycle
+    # ---------------------------
+    if "all cycle" not in q and "all cycles" not in q:
+        cycle_match = re.search(r"cycle\s*([0-9]{1,2})", q)
+        if cycle_match:
+            filters["cycle"] = cycle_match.group(1)
+
+    # ---------------------------
+    # Worker / Team
+    # ---------------------------
+    worker_match = re.search(r"(?:for|of)\s+([a-z]+)'?s\s+team", q)
+    if worker_match:
+        filters["worker_name"] = worker_match.group(1).title()
+
+    return filters
+
+
+# ---------------------------------------------------------
+# MAIN PARSER
+# ---------------------------------------------------------
+def parse_intent(llm_output: str, question: str) -> Dict[str, Any]:
+    parsed = _extract_json(llm_output)
+
+    intent = DEFAULT_INTENT.copy()
+    intent["filters"] = {}
+
+    # -------------------------------------
+    # Merge raw LLM output
+    # -------------------------------------
+    for k, v in parsed.items():
+        intent[k] = v
+
+    # -------------------------------------
+    # Normalize filters from LLM
+    # -------------------------------------
+    raw_filters: Dict[str, Any] = {}
+
+    if isinstance(intent.get("filter"), dict):
+        raw_filters.update(intent["filter"])
+    if isinstance(intent.get("filters"), dict):
+        raw_filters.update(intent["filters"])
+
+    for k, v in raw_filters.items():
+        canonical = resolve_to_canonical(k)
+        if canonical and v:
+            intent["filters"][canonical] = v
+
+    # -------------------------------------
+    # Fallback filter extraction
+    # -------------------------------------
+    extracted = _extract_filters_from_question(question)
+    for k, v in extracted.items():
+        intent["filters"].setdefault(k, v)
+
+    # -------------------------------------
+    # Resolve measures
+    # -------------------------------------
+    resolved_measures = []
+
+    if isinstance(intent.get("measures"), list):
+        for m in intent["measures"]:
+            canonical = resolve_to_canonical(m)
+            if canonical:
+                resolved_measures.append(canonical)
+
+    if not resolved_measures:
+        inferred = _infer_measure_from_question(question)
+        if inferred:
+            resolved_measures = [inferred]
+
+    intent["measures"] = resolved_measures
+
+    # -------------------------------------
+    # Aggregation
+    # -------------------------------------
+    q = question.lower()
+    if "average" in q or "avg" in q:
+        intent["aggregation"] = "avg"
+    elif "count" in q or "how many" in q:
+        intent["aggregation"] = "count"
+    else:
+        intent["aggregation"] = intent.get("aggregation", "sum")
+
+    return intent

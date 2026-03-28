@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Professional FP&A Theme - Deep Blues & Clean Grays */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Primary - Professional Deep Blue */
+    --primary: 215 85% 35%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 215 85% 30%;
+
+    /* Secondary - Subtle Gray */
+    --secondary: 210 15% 94%;
+    --secondary-foreground: 215 25% 15%;
+
+    /* Muted - Light Background */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Accent - Trustworthy Blue */
+    --accent: 215 75% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Success - Subtle Green for financial positives */
+    --success: 145 65% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 92%;
+    --ring: 215 85% 35%;
+
+    --chart-1: 215 85% 35%;
+    --chart-2: 195 75% 45%;
+    --chart-3: 145 65% 45%;
+    --chart-4: 265 65% 50%;
+    --chart-5: 25 85% 55%;
+    
+    --radius: 0.75rem;
+    
+    /* Custom tokens for chat interface */
+    --chat-bubble-user: 215 85% 35%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 0 0% 100%;
+    --chat-bubble-bot-foreground: 215 25% 15%;
+    
+    --sidebar-bg: 215 30% 12%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-hover: 215 25% 18%;
+    --sidebar-active: 215 85% 35%;
+    
+    /* Animations */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 215 30% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 215 25% 14%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 215 25% 14%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 215 85% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 215 85% 50%;
+
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 210 20% 95%;
+
+    --muted: 215 25% 16%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 215 75% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 145 65% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 20%;
+    --input: 215 20% 18%;
+    --ring: 215 85% 45%;
+    
+    --chart-1: 215 85% 50%;
+    --chart-2: 195 75% 55%;
+    --chart-3: 145 65% 55%;
+    --chart-4: 265 65% 60%;
+    --chart-5: 25 85% 65%;
+    
+    --chat-bubble-user: 215 85% 45%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 215 25% 16%;
+    --chat-bubble-bot-foreground: 210 20% 95%;
+    
+    --sidebar-bg: 215 35% 8%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-hover: 215 25% 14%;
+    --sidebar-active: 215 85% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Animation keyframes */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
